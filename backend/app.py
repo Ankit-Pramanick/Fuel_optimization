@@ -12,24 +12,14 @@ print("Model and scaler loaded")
 
 # INIT FLASK APP
 
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__)
 
 
 # HEALTH CHECK
 
 @app.route("/")
 def home():
-    return render_template("index.html")
-
-# Route page
-@app.route("/route")
-def route_page():
-    return render_template("route.html")
-
-# Dashboard page
-@app.route("/dashboard")
-def dashboard():
-    return render_template("dashboard.html")
+    return "Load the frontend UI integration here "
 
 
 # SINGLE SEGMENT PREDICTION
