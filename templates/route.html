@@ -78,9 +78,10 @@
                     </div>
 
                     <div class="text-center">
-                        <a href="dashboard.html" class="btn btn-custom">
-                            Find Fuel-Efficient Route →
-                        </a>
+                        <button type="button" class="btn btn-custom" onclick="predictRoute()">
+                        Find Fuel-Efficient Route →
+                    </button>
+
                     </div>
                 </form>
 
@@ -88,6 +89,45 @@
         </div>
     </div>
 </div>
+<script>
+function predictRoute() {
+
+    console.log("Function started");
+
+    const segments = [
+    [60,1.2,2500,45,0,55,1,2,20],
+    [58,1.1,2400,40,0,52,1,2,18],
+    [65,1.3,2600,50,0,60,1,3,22]
+];
+
+
+    fetch("/predict_route", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            segments: segments
+        })
+    })
+    .then(response => {
+        console.log("Response received", response);
+        return response.json();
+    })
+    .then(data => {
+        console.log("Prediction:", data);
+        localStorage.setItem("routeFuel", JSON.stringify(data));
+window.location.href = "/dashboard";
+
+    })
+    .catch(error => {
+        console.error("Fetch error:", error);
+        alert("Backend connection failed!");
+    });
+}
+
+</script>
+
 
 </body>
 </html>
