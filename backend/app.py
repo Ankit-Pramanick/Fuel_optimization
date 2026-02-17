@@ -19,7 +19,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Load the frontend UI integration here "
+    return render_template("dashboard.html")
 
 
 # SINGLE SEGMENT PREDICTION
