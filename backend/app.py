@@ -21,6 +21,16 @@ app = Flask(__name__, template_folder="templates")
 def home():
     return render_template("index.html")
 
+# Route page
+@app.route("/route")
+def route_page():
+    return render_template("route.html")
+
+# Dashboard page
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
+
 
 # SINGLE SEGMENT PREDICTION
 
