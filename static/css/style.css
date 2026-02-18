@@ -1,0 +1,11 @@
+/* Additional custom styles if needed, mostly using Tailwind */
+
+/* We are using CDN, so @tailwind directives won't work.
+   All Tailwind classes are loaded via the CDN in index.html.
+   This file is for any custom CSS overrides if needed.
+*/
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
