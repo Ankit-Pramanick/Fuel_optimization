@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Optimization</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Google Maps JS API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC8I7MxFBrtZAhtzP5s4IgjJtJS1MHPnf8&libraries=geometry"
+        async defer></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        dark: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-up {
+            animation: slideUp 0.4s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-dark-900 text-white min-h-screen font-sans selection:bg-brand-500 selection:text-white overflow-x-hidden">
+
+    <!-- Background Decoration -->
+    <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-500/10 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px]"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-12 fade-in"
+            style="animation-delay: 0.1s;">
+            <div class="flex items-center gap-3 mb-4 md:mb-0">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-400 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight">Eco<span class="text-brand-400">Route</span></h1>
+            </div>
+
+            <nav class="bg-dark-800/50 p-1 rounded-xl glass-panel inline-flex">
+                <button onclick="switchTab('map')" id="tab-map"
+                    class="px-6 py-2 rounded-lg text-sm font-medium transition-all duration-300 bg-brand-600 text-white shadow-lg shadow-brand-500/20">
+                    Map Route
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="relative min-h-[500px]">
+
+            <!-- SECTION: MAP ROUTE -->
+            <section id="section-map"
+                class="absolute inset-0 transition-all duration-500 ease-out transform translate-x-0 opacity-100 z-10">
+                <!-- Flex layout: Top map/nav, Bottom results -->
+                <div class="flex flex-col gap-8 h-full min-h-[600px]">
+                    <!-- TOP: Nav & Map -->
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                        <!-- Controls -->
+                        <div class="glass-panel p-6 rounded-2xl shadow-xl border-t border-white/5 lg:col-span-1 flex flex-col gap-6 slide-up"
+                            style="animation-delay: 0.2s;">
+                            <h2 class="text-xl font-semibold mb-2">Smart Navigation</h2>
+                            <form id="map-form" onsubmit="handleMapSubmit(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-400 mb-1">Source
+                                        City/Address</label>
+                                    <input type="text" id="map-source" placeholder="e.g., Mumbai"
+                                        class="w-full bg-dark-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
+                                        required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-400 mb-1">Destination
+                                        City/Address</label>
+                                    <input type="text" id="map-dest" placeholder="e.g., Pune"
+                                        class="w-full bg-dark-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
+                                        required>
+                                </div>
+                                <button type="submit"
+                                    class="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-brand-500/25 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                                    Find Routes
+                                </button>
+
+                                <!-- Advanced Options -->
+                                <div class="mt-6 pt-4 border-t border-slate-700/50">
+                                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                                        Vehicle &
+                                        Driver Profile</p>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-400 mb-1">Max
+                                                Speed(km/h)</label>
+                                            <input type="number" id="map-speed" value="45"
+                                                class="w-full bg-dark-900/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-400 mb-1">Acceleration
+                                                (m/s²)</label>
+                                            <input type="number" step="0.1" id="map-accel" value="0.6"
+                                                class="w-full bg-dark-900/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-400 mb-1">Vehicle
+                                                HP</label>
+                                            <input type="number" id="map-hp" value="120"
+                                                class="w-full bg-dark-900/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-400 mb-1">A/C Temp
+                                                (°C)</label>
+                                            <input type="number" id="map-temp" value="28"
+                                                class="w-full bg-dark-900/50 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label class="block text-xs font-medium text-slate-400 mb-1">Current Load
+                                                (%)</label>
+                                            <input type="range" id="map-load" min="0" max="100" value="55"
+                                                class="w-full accent-brand-500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Map Container -->
+                        <div class="glass-panel p-2 rounded-2xl shadow-xl border-t border-white/5 lg:col-span-3 h-[600px] relative overflow-hidden slide-up"
+                            style="animation-delay: 0.3s;">
+                            <div id="map-container" class="w-full h-full rounded-xl z-0 bg-dark-800"></div>
+
+                            <!-- Map loading overlay -->
+                            <div id="map-loader"
+                                class="absolute inset-0 bg-dark-900/80 backdrop-blur-sm z-10 hidden flex-col items-center justify-center rounded-xl">
+                                <div
+                                    class="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-4">
+                                </div>
+                                <p class="text-brand-400 font-medium">Calculating optimal routes...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BOTTOM: Results (Hidden initially) -->
+                    <div id="results-container" class="hidden grid grid-cols-1 lg:grid-cols-4 gap-8 slide-up"
+                        style="animation-delay: 0.4s;">
+                        <!-- Recommended Route Card -->
+                        <div class="lg:col-span-1">
+                            <div id="map-results" class="flex flex-col gap-4">
+                                <h3
+                                    class="text-sm font-medium text-slate-400 border-b border-slate-700 pb-2 flex items-center justify-between">
+                                    <span>🏆 Recommended Eco-Route</span>
+                                </h3>
+                                <div
+                                    class="bg-gradient-to-br from-brand-500/20 to-brand-600/10 border border-brand-500/40 p-5 rounded-xl shadow-lg relative overflow-hidden">
+                                    <!-- Decoration -->
+                                    <div
+                                        class="absolute -right-4 -top-4 w-16 h-16 bg-brand-500/20 rounded-full blur-xl">
+                                    </div>
+
+                                    <div class="text-3xl font-bold text-white mb-1 drop-shadow-md" id="map-fuel-val">--
+                                    </div>
+                                    <div class="text-xs text-brand-400 font-semibold mb-4 tracking-wide uppercase">Total
+                                        Liters Estimated</div>
+
+                                    <div class="grid grid-cols-2 gap-3 mb-4">
+                                        <div class="bg-dark-900/40 p-2.5 rounded-lg border border-white/5">
+                                            <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1">
+                                                Distance
+                                            </div>
+                                            <div class="text-sm font-semibold text-white"><span
+                                                    id="map-dist-val">--</span>
+                                                km</div>
+                                        </div>
+                                        <div class="bg-dark-900/40 p-2.5 rounded-lg border border-white/5">
+                                            <div class="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Est.
+                                                Time
+                                            </div>
+                                            <div class="text-sm font-semibold text-white"><span
+                                                    id="map-time-val">--</span>
+                                                min</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Eco Impact (Module 9/10 logic) -->
+                                    <div
+                                        class="border-t border-brand-500/20 pt-3 mt-1 flex items-center justify-between">
+                                        <div>
+                                            <div class="text-[10px] text-slate-400 uppercase tracking-wider">CO₂
+                                                Footprint
+                                            </div>
+                                            <div class="text-sm font-bold text-green-400"><span
+                                                    id="map-co2-val">--</span>
+                                                kg</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-[10px] text-slate-400 uppercase tracking-wider">Eco-Score
+                                            </div>
+                                            <div class="text-sm font-bold text-brand-300">A+</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Route Comparisons -->
+                        <div class="lg:col-span-3">
+                            <div
+                                class="glass-panel p-6 rounded-2xl shadow-xl border-t border-white/5 h-full flex flex-col">
+                                <h3
+                                    class="text-lg font-medium text-slate-200 mb-4 flex items-center justify-between border-b border-slate-700 pb-2">
+                                    <span>📊 Route Comparisons</span>
+                                </h3>
+                                <div id="route-comparisons" class="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+                                    <!-- Dynamic cards added here via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- SECTION: FULL ROUTE -->
+            <section id="section-route"
+                class="absolute inset-0 transition-all duration-500 ease-out transform translate-x-[100%] opacity-0 pointer-events-none">
+                <div class="glass-panel p-8 rounded-2xl shadow-xl border-t border-white/5 max-w-3xl mx-auto">
+                    <h2 class="text-xl font-semibold mb-6">Route Prediction</h2>
+                    <p class="text-slate-400 mb-6">Enter features for multiple segments to calculate the total fuel for
+                        the entire route.</p>
+
+                    <form id="route-form" onsubmit="handleRouteSubmit(event)">
+                        <div id="segments-container" class="space-y-4 mb-6">
+                            <!-- Dynamic segments will be added here -->
+                            <div class="grid grid-cols-[1fr,auto] gap-4 items-center segment-input-group">
+                                <input type="text"
+                                    class="route-segment-input w-full bg-dark-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
+                                    placeholder="45, 0.6, 2.5, 1.2, 0.4, 28, 1, 300, 12">
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4 mb-8">
+                            <button type="button" onclick="addSegmentInput()"
+                                class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white transition-all">
+                                + Add Segment
+                            </button>
+                            <button type="button" onclick="clearSegments()"
+                                class="px-4 py-2 bg-transparent hover:bg-red-500/10 text-red-400 hover:text-red-300 rounded-lg text-sm transition-all border border-transparent hover:border-red-500/20">
+                                Clear All
+                            </button>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all">
+                            Calculate Total Route Fuel
+                        </button>
+                    </form>
+
+                    <div id="route-result" class="hidden mt-8 pt-8 border-t border-slate-700/50">
+                        <div class="flex justify-between items-end mb-4">
+                            <span class="text-slate-400">Total Fuel</span>
+                            <span class="text-3xl font-bold text-white" id="route-total-value">--</span>
+                        </div>
+                        <div class="bg-dark-900/50 rounded-xl p-4">
+                            <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Segment
+                                Breakdown</h4>
+                            <div id="route-breakdown" class="space-y-2">
+                                <!-- Bars will go here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- SECTION: COMPARE ROUTES -->
+            <section id="section-compare"
+                class="absolute inset-0 transition-all duration-500 ease-out transform translate-x-[100%] opacity-0 pointer-events-none">
+                <div class="glass-panel p-8 rounded-2xl shadow-xl border-t border-white/5 max-w-4xl mx-auto">
+                    <h2 class="text-xl font-semibold mb-6">Compare Routes</h2>
+                    <p class="text-slate-400 mb-6">Paste data for two routes to find the most efficient one.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">Route A (JSON format)</label>
+                            <textarea id="compare-route-1" rows="5"
+                                class="w-full bg-dark-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono text-sm"
+                                placeholder="[[10, 20], [15, 25]]"></textarea>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-300">Route B (JSON format)</label>
+                            <textarea id="compare-route-2" rows="5"
+                                class="w-full bg-dark-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 font-mono text-sm"
+                                placeholder="[[12, 18], [14, 22]]"></textarea>
+                        </div>
+                    </div>
+
+                    <button onclick="handleCompareSubmit()"
+                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-500/25 transition-all mb-8">
+                        Compare Efficiency
+                    </button>
+
+                    <div id="compare-result" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div id="compare-card-1"
+                                class="p-6 rounded-xl bg-dark-900/50 border border-slate-700/50 transition-all">
+                                <h3 class="text-slate-400 mb-2">Route A</h3>
+                                <div class="text-2xl font-bold text-white mb-1" id="compare-val-0">--</div>
+                                <div class="text-xs text-slate-500">Liters Total</div>
+                            </div>
+                            <div id="compare-card-2"
+                                class="p-6 rounded-xl bg-dark-900/50 border border-slate-700/50 transition-all">
+                                <h3 class="text-slate-400 mb-2">Route B</h3>
+                                <div class="text-2xl font-bold text-white mb-1" id="compare-val-1">--</div>
+                                <div class="text-xs text-slate-500">Liters Total</div>
+                            </div>
+                        </div>
+                        <div class="mt-6 text-center">
+                            <span
+                                class="inline-block px-4 py-2 rounded-full bg-brand-500/20 text-brand-400 font-medium text-sm border border-brand-500/20"
+                                id="compare-winner">
+                                Winner: --
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.env
+
+# Model files (ignore the heavy Random Forest model, keep XGBoost and scaler)
+backend/fuel_model.pkl
+fuel_model.pkl
+!backend/xgboost_model.pkl
+!backend/scaler.pkl
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Gemini
+.agents/
+extract_ppt.py
