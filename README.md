@@ -44,51 +44,7 @@ A machine learning-powered eco-routing navigation system that recommends the mos
 │   └── js/app.js                  # Frontend UI logic, API calls, and Google Maps drawing
 ├── requirements.txt               # Main dependencies list for deployment
 ├── .gitignore                     # Git ignore rules
-└── Project Report.pdf             # Project documentation and slides
 ```
 
 ---
 
-## 💻 How to Run Locally
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/Ankit-Pramanick/Fuel_optimization.git
-cd Fuel_optimization
-```
-
-### 2. Set up virtual environment
-```bash
-python -m venv venv
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Run the application
-```bash
-python backend/app.py
-```
-Open your browser and navigate to `http://127.0.0.1:5000/`.
-
-*Note: Ensure your internet connection is active, as the system communicates with external APIs (Nominatim, OpenTopoData, Google Maps).*
-
----
-
-## ☁️ Online Deployment Guide (Render)
-
-This repository is optimized for one-click hosting on platforms like **Render**:
-
-1.  **Create an Account**: Sign up at [render.com](https://render.com).
-2.  **New Web Service**: Click **New** → **Web Service** and connect this GitHub repository.
-3.  **Configure Environment**:
-    *   **Runtime**: `Python 3.10+`
-    *   **Build Command**: `pip install -r requirements.txt`
-    *   **Start Command**: `gunicorn --chdir backend app:app` (This starts the Flask app using Gunicorn production WSGI server).
-4.  **Click Deploy**: Render will automatically build the environment, install the ML requirements, and launch your live application!
