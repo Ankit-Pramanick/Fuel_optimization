@@ -2,7 +2,7 @@
 
 A machine learning-powered eco-routing navigation system that recommends the most fuel-efficient route between two locations. By combining vehicle parameters, driving behavior, terrain slope (elevation), and real-time traffic conditions, the system predicts fuel consumption (L/hr) for route segments and selects the route that minimizes fuel usage.
 
-## 🚀 Key Features
+## Key Features
 
 *   **Smart Navigation & Routing**: Integrates **OpenStreetMap (OSM)** and **OSRM (Open Source Routing Machine)** to generate multiple candidate routes between any start and destination point.
 *   **Driver & Vehicle Profiling**: Allows customization of vehicle horsepower, load percentage, A/C temperature, driving acceleration, and speed limit.
@@ -13,7 +13,7 @@ A machine learning-powered eco-routing navigation system that recommends the mos
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 *   **Backend**: Python, Flask, Flask-CORS
 *   **Machine Learning**: XGBoost, Scikit-learn, Joblib, Pandas, NumPy
@@ -22,7 +22,7 @@ A machine learning-powered eco-routing navigation system that recommends the mos
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 ├── backend/
