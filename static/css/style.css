@@ -1,11 +1,110 @@
-/* Additional custom styles if needed, mostly using Tailwind */
-
-/* We are using CDN, so @tailwind directives won't work.
-   All Tailwind classes are loaded via the CDN in index.html.
-   This file is for any custom CSS overrides if needed.
-*/
+/* Custom Design Tokens & Motion System */
+:root {
+    --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+/* Card Micro-Interactions */
+.route-card-interactive {
+    transition: transform 200ms var(--ease-out-quart),
+                border-color 200ms var(--ease-out-quart),
+                background-color 200ms var(--ease-out-quart);
+}
+
+.route-card-interactive:hover {
+    transform: translateY(-2px);
+    border-color: #2a3d31;
+}
+
+/* Staggered Card Entrance Animations */
+.animate-stagger-1 { animation: slideUpFade 350ms var(--ease-out-quart) 30ms both; }
+.animate-stagger-2 { animation: slideUpFade 350ms var(--ease-out-quart) 80ms both; }
+.animate-stagger-3 { animation: slideUpFade 350ms var(--ease-out-quart) 130ms both; }
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dual Ring Custom Loader (Earthy Eco Palette) */
+.loader-dual-ring {
+    position: relative;
+    width: 44px;
+    height: 44px;
+}
+.loader-dual-ring::before,
+.loader-dual-ring::after {
+    content: '';
+    box-sizing: border-box;
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid transparent;
+}
+.loader-dual-ring::before {
+    border-top-color: #3b9b6a;
+    border-right-color: #3b9b6a;
+    animation: loaderSpin 0.75s linear infinite;
+}
+.loader-dual-ring::after {
+    border-bottom-color: #9cc8b1;
+    border-left-color: #9cc8b1;
+    animation: loaderSpin 1.1s cubic-bezier(0.68, -0.55, 0.265, 1.55) reverse infinite;
+    opacity: 0.7;
+}
+
+@keyframes loaderSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* Focus Ring Smoothing */
+input:focus, textarea:focus, button:focus {
+    transition: border-color 200ms var(--ease-out-quart), box-shadow 200ms var(--ease-out-quart) !important;
+}
+
+/* Button Active Press Feedback */
+button:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Range Slider Track (Earthy) */
+input[type="range"]::-webkit-slider-runnable-track {
+    background: #141e18;
+    border-radius: 4px;
+    height: 8px;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    background: #3b9b6a;
+    border: 2px solid #0d1410;
+    cursor: pointer;
+    margin-top: -5px;
+}
+
+/* Accessibility: Prefers Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    .loader-dual-ring::before, .loader-dual-ring::after {
+        animation: none !important;
+    }
 }
