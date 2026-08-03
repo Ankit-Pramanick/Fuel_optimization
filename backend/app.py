@@ -1,16 +1,20 @@
 import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import numpy as np
 import joblib
 import routing
 import route_features
+import fuel_physics
+
+load_dotenv()
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 CORS(app)
 
-# Google Maps API key - set via GOOGLE_MAPS_KEY env var in production
-app.config['GOOGLE_MAPS_KEY'] = os.environ.get('GOOGLE_MAPS_KEY', 'AIzaSyC8I7MxFBrtZAhtzP5s4IgjJtJS1MHPnf8')
+# Google Maps API key — loaded from .env via GOOGLE_MAPS_KEY env var
+app.config['GOOGLE_MAPS_KEY'] = os.environ.get('GOOGLE_MAPS_KEY', '')
 
 # LOAD MODEL & SCALER
 base_path = os.path.dirname(os.path.abspath(__file__))
@@ -18,6 +22,41 @@ model = joblib.load(os.path.join(base_path, "xgboost_model.pkl"))
 scaler = joblib.load(os.path.join(base_path, "scaler.pkl"))
 
 print("XGBoost Model & Scaler loaded successfully.")
+
+
+def _feat(features, idx, default):
+    """Safely extract a numeric feature value with a default fallback."""
+    try:
+        return float(features[idx])
+    except (IndexError, TypeError, ValueError):
+        return default
+
+
+def _seg_fuel(features):
+    """Compute fuel (L) for a single segment using the physical power equation."""
+    return fuel_physics.segment_fuel_liters(
+        speed_kmh=_feat(features, 0, 45.0),
+        accel_ms2=_feat(features, 1, 0.6),
+        slope_deg=_feat(features, 2, 0.0),
+        dist_km=_feat(features, 3, 1.0),
+        congestion=_feat(features, 4, 0.0),
+        temperature_c=_feat(features, 5, 28.0),
+        stop_go_freq=_feat(features, 6, 0.0),
+        load_pct=_feat(features, 7, 55.0),
+        horsepower=_feat(features, 8, 120.0),
+    )
+
+
+def _fuel_rate(features):
+    """Compute instantaneous fuel burn rate (L/hr) for reporting."""
+    return fuel_physics.fuel_rate_lph(
+        speed_kmh=_feat(features, 0, 45.0),
+        accel_ms2=_feat(features, 1, 0.6),
+        slope_deg=_feat(features, 2, 0.0),
+        horsepower=_feat(features, 8, 120.0),
+        load_pct=_feat(features, 7, 55.0),
+        temperature_c=_feat(features, 5, 28.0),
+    )
 
 
 # PAGE ROUTES
@@ -37,22 +76,15 @@ def predict_segment():
     if not features:
         return jsonify({"error": "No features provided."}), 400
 
-    arr = np.array([features])           # shape (1, N)
-    scaled = scaler.transform(arr)
-    pred_lph = float(model.predict(scaled)[0]) # L/hr
-
-    # Calculate segment fuel in Liters if distance (index 3) and speed (index 0) provided
-    speed = float(features[0]) if len(features) > 0 and float(features[0]) > 0 else 45.0
-    dist = float(features[3]) if len(features) > 3 else 1.0
-    time_hours = dist / speed
-    fuel_liters = pred_lph * time_hours
+    fuel_liters = _seg_fuel(features)
+    rate_lph = _fuel_rate(features)
 
     return jsonify({
         "predicted_fuel": fuel_liters,
         "fuel_consumption": fuel_liters,
         "estimated_fuel": fuel_liters,
         "fuel": fuel_liters,
-        "fuel_rate_lph": pred_lph
+        "fuel_rate_lph": rate_lph
     })
 
 
@@ -65,17 +97,7 @@ def predict_route():
     if not segments:
         return jsonify({"error": "No segments provided."}), 400
 
-    arr = np.array(segments)
-    scaled = scaler.transform(arr)
-
-    preds_lph = model.predict(scaled) # L/hr per segment
-
-    distances_km = arr[:, 3] if arr.shape[1] > 3 else np.ones(len(segments))
-    speeds_kmh = arr[:, 0] if arr.shape[1] > 0 else np.full(len(segments), 45.0)
-    speeds_kmh = np.where(speeds_kmh <= 0, 1.0, speeds_kmh)
-
-    time_hours = distances_km / speeds_kmh
-    segment_liters = (preds_lph * time_hours).tolist()
+    segment_liters = [_seg_fuel(seg) for seg in segments]
     total_fuel = float(np.sum(segment_liters))
 
     return jsonify({
@@ -103,17 +125,7 @@ def compare_routes():
             route_totals.append(0.0)
             continue
 
-        arr = np.array(route_segments)
-        scaled = scaler.transform(arr)
-        preds_lph = model.predict(scaled)
-
-        distances_km = arr[:, 3] if arr.shape[1] > 3 else np.ones(len(route_segments))
-        speeds_kmh = arr[:, 0] if arr.shape[1] > 0 else np.full(len(route_segments), 45.0)
-        speeds_kmh = np.where(speeds_kmh <= 0, 1.0, speeds_kmh)
-
-        time_hours = distances_km / speeds_kmh
-        segment_liters = preds_lph * time_hours
-        route_totals.append(float(np.sum(segment_liters)))
+        route_totals.append(float(np.sum([_seg_fuel(seg) for seg in route_segments])))
 
     best_index = int(np.argmin(route_totals))   # lowest fuel = most efficient
 
@@ -187,19 +199,8 @@ def generate_routes():
         if not segments_features:
             print(f"DEBUG Route {ri}: EMPTY features — skipping!")
             continue
-            
-        arr = np.array(segments_features)
-        scaled = scaler.transform(arr)
-        preds_lph = model.predict(scaled) # L/hr
-        
-        print(f"DEBUG Route {ri}: preds_lph min={preds_lph.min():.4f} max={preds_lph.max():.4f} mean={preds_lph.mean():.4f}")
-        
-        distances_km = arr[:, 3]
-        speeds_kmh = arr[:, 0]
-        speeds_kmh = np.where(speeds_kmh <= 0, 1.0, speeds_kmh)
-        time_hours = distances_km / speeds_kmh
-        
-        segment_liters = preds_lph * time_hours
+
+        segment_liters = [_seg_fuel(seg) for seg in segments_features]
         total_fuel = float(np.sum(segment_liters))
         
         print(f"DEBUG Route {ri}: total_fuel = {total_fuel:.4f} L")
@@ -212,7 +213,7 @@ def generate_routes():
             "duration_s": route["duration"],
             "geometry": route["geometry"],
             "total_fuel_l": total_fuel,
-            "segment_fuels": segment_liters.tolist()
+            "segment_fuels": segment_liters
         })
         
     if not routes_response:

@@ -7,16 +7,12 @@
     <title>EcoRoute — AI Fuel-Efficient Route Optimizer</title>
     <meta name="description" content="AI-powered eco-routing system using XGBoost ML and Internet of Vehicles (IoV) to find the most fuel-efficient route between Indian cities. Analyzes terrain, traffic, and vehicle profiles.">
 
-    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
+    <!-- Google Fonts: Roboto (Google Maps typography) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
     <!-- Google Maps JS API (loaded securely via Flask config) -->
     <script src="https://maps.googleapis.com/maps/api/js?key={{ config.GOOGLE_MAPS_KEY }}&libraries=geometry&callback=initMap"
@@ -25,456 +21,229 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
-    <!-- Tailwind Configuration: Earthy Eco Palette -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Plus Jakarta Sans', 'sans-serif'],
-                        mono: ['Space Grotesk', 'monospace'],
-                    },
-                    colors: {
-                        earth: {
-                            base: '#0d1410',       /* Rich warm charcoal-forest base */
-                            surface: '#141e18',    /* Warm deep sage container */
-                            inset: '#0a0f0c',      /* Deep warm inset */
-                            border: '#233329',     /* Subtle forest border */
-                            borderLight: '#2a3d31',/* Input border */
-                            text: '#e8f0ec',       /* Warm sage off-white */
-                            muted: '#92a89c',      /* Muted sage gray */
-                            subtle: '#64786d',     /* Deep muted sage */
-                        },
-                        sage: {
-                            50: '#f2f8f5',
-                            100: '#e1efe7',
-                            200: '#c5e0d1',
-                            300: '#9cc8b1',
-                            400: '#66c292',       /* Crisp sage green */
-                            500: '#3b9b6a',       /* Primary muted forest sage */
-                            600: '#2e7d56',       /* Deep forest green */
-                            700: '#246345',
-                            800: '#1e4f38',
-                            900: '#1a4230',
-                        },
-                        sand: '#e0a96d',          /* Warm Ochre */
-                        terracotta: '#e07a5f',    /* Earthy Terracotta */
-                        water: '#5b8eab'          /* Muted Slate Blue */
-                    }
-                }
-            }
-        }
-    </script>
-
+    <!-- Inline loader fallback styling before CSS arrives -->
     <style>
-        /* Custom Animations */
-        .fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .slide-up {
-            animation: slideUp 0.35s ease-out forwards;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Hide scrollbar for clean look */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #0d1410;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #233329;
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #2a3d31;
-        }
-
-        /* Toast Notification System */
-        #toast-container {
-            position: fixed;
-            top: 1.5rem;
-            right: 1.5rem;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            pointer-events: none;
-        }
-
-        .toast {
-            pointer-events: auto;
-            padding: 0.875rem 1.25rem;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            max-width: 24rem;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
-            animation: toastIn 300ms var(--ease-out-quart) forwards;
+        .no-js-fallback {
+            font-family: 'Roboto', sans-serif;
+            background: #ffffff;
+            color: #3c4043;
+            min-height: 100vh;
             display: flex;
             align-items: center;
-            gap: 0.625rem;
-            word-break: break-word;
-        }
-
-        .toast-error {
-            background: #141e18;
-            border: 1px solid #e07a5f;
-            color: #f8b4a6;
-        }
-
-        .toast-success {
-            background: #141e18;
-            border: 1px solid #3b9b6a;
-            color: #9cc8b1;
-        }
-
-        .toast-warning {
-            background: #141e18;
-            border: 1px solid #e0a96d;
-            color: #fce3b8;
-        }
-
-        .toast-exit {
-            animation: toastOut 200ms var(--ease-out-quart) forwards;
-        }
-
-        @keyframes toastIn {
-            from { opacity: 0; transform: translateX(100%); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        @keyframes toastOut {
-            from { opacity: 1; transform: translateX(0); }
-            to { opacity: 0; transform: translateX(100%); }
-        }
-
-        /* Visually hidden utility for screen readers */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+            gap: 8px;
         }
     </style>
 </head>
 
-<body class="bg-earth-base text-earth-text min-h-screen font-sans selection:bg-sage-500 selection:text-earth-base overflow-x-hidden">
+<body>
 
-    <!-- Noscript fallback -->
-    <noscript>
-        <div style="background:#141e18;color:#e8f0ec;padding:2rem;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;">
-            <h1 style="font-size:1.5rem;font-weight:700;">EcoRoute requires JavaScript</h1>
-            <p style="max-width:28rem;color:#92a89c;">This application uses Google Maps and real-time ML predictions that require JavaScript to function. Please enable JavaScript in your browser settings and reload the page.</p>
+    <!-- Full-screen map canvas (stretches edge-to-edge behind all panels) -->
+    <div id="map-container" class="gm-map" role="application" aria-label="Interactive map showing route options"></div>
+
+    <!-- Floating search card (top-left) -->
+    <div id="search-card" class="gm-search-card" role="search">
+        <div class="gm-search-header">
+            <div class="gm-brand">
+                <span class="gm-brand-dot" aria-hidden="true"></span>
+                Eco<span class="gm-brand-accent">Route</span>
+            </div>
+            <span class="gm-badge">XGBoost ML R² 0.90</span>
         </div>
-    </noscript>
 
-    <!-- Toast notification container (accessible live region) -->
-    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
-
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
-
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-center mb-10 fade-in" style="animation-delay: 0.05s;">
-            <div class="flex items-center gap-3 mb-4 md:mb-0">
-                <div class="w-9 h-9 rounded-lg bg-sage-500/10 border border-sage-500/30 text-sage-400 flex items-center justify-center font-bold" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-sage-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                </div>
-                <div class="flex items-center gap-3">
-                    <h1 class="sr-only">AI-Based Fuel-Efficient Route Optimization System</h1>
-                    <span class="text-xl font-bold tracking-tight text-earth-text" aria-hidden="true">Eco<span class="text-sage-400">Route</span></span>
-                    <span class="hidden sm:inline-block bg-sage-500/10 text-sage-400 border border-sage-500/20 text-[11px] font-mono px-2.5 py-0.5 rounded-full">XGBoost ML R² 0.90</span>
+        <form id="map-form" onsubmit="handleMapSubmit(event)" novalidate>
+            <div class="gm-field">
+                <label for="map-source" class="gm-label">Source</label>
+                <div class="gm-input-wrap">
+                    <svg class="gm-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" id="map-source" placeholder="Choose starting point" autocomplete="off"
+                        aria-label="Source city or address" required>
                 </div>
             </div>
 
-            <nav class="bg-earth-surface p-1 rounded-lg border border-earth-border inline-flex items-center gap-1" aria-label="Route navigation">
-                <button onclick="switchTab('map')" id="tab-map"
-                    class="px-4 py-2 rounded-md text-xs md:text-sm font-semibold transition-colors bg-sage-500 text-earth-base hover:bg-sage-400 focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2 focus:ring-offset-earth-base"
-                    aria-current="page">
-                    Map Route
+            <div class="gm-field">
+                <label for="map-dest" class="gm-label">Destination</label>
+                <div class="gm-input-wrap">
+                    <svg class="gm-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" id="map-dest" placeholder="Choose destination" autocomplete="off"
+                        aria-label="Destination city or address" required>
+                </div>
+            </div>
+
+            <button type="submit" id="btn-find-routes"
+                class="gm-primary-btn" aria-label="Find routes">
+                Find Routes
+            </button>
+
+            <!-- Collapsible vehicle / driver profile -->
+            <div class="gm-collapse">
+                <button type="button" id="gm-profile-toggle" class="gm-collapse-toggle" aria-expanded="false" aria-controls="gm-profile-fields">
+                    <span>Vehicle &amp; Driver Profile</span>
+                    <svg id="gm-profile-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
-            </nav>
-        </header>
-
-        <!-- Main Content Area -->
-        <main class="relative min-h-[500px]">
-
-            <!-- SECTION: MAP ROUTE -->
-            <section id="section-map" aria-label="Map route finder"
-                class="absolute inset-0 transition-all duration-300 ease-out transform translate-x-0 opacity-100 z-10">
-                <div class="flex flex-col gap-8 h-full min-h-[600px]">
-                    <!-- TOP: Nav & Map -->
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        <!-- Controls Panel -->
-                        <div class="bg-earth-surface border border-earth-border p-6 rounded-xl lg:col-span-4 flex flex-col gap-6 slide-up" style="animation-delay: 0.1s;">
-                            <div class="flex items-center justify-between">
-                                <h2 class="text-lg font-bold text-earth-text tracking-tight">Smart Navigation</h2>
-                                <span class="text-[11px] font-mono text-earth-muted bg-earth-inset px-2 py-0.5 rounded border border-earth-border">IoV Connected</span>
-                            </div>
-                            <form id="map-form" onsubmit="handleMapSubmit(event)" class="space-y-4" novalidate>
-                                <div>
-                                    <label for="map-source" class="flex items-center text-xs font-semibold text-earth-muted mb-1.5 uppercase tracking-wider">
-                                        <span class="w-2 h-2 rounded-full bg-sage-400 mr-1.5" aria-hidden="true"></span>
-                                        Source City/Address
-                                    </label>
-                                    <input type="text" id="map-source" placeholder="e.g., Mumbai" autocomplete="address-level2"
-                                        class="w-full bg-earth-inset border border-earth-borderLight rounded-lg px-3.5 py-2.5 text-earth-text placeholder:text-earth-subtle focus:outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500 text-sm transition-colors"
-                                        required aria-required="true">
-                                </div>
-                                <div>
-                                    <label for="map-dest" class="flex items-center text-xs font-semibold text-earth-muted mb-1.5 uppercase tracking-wider">
-                                        <span class="w-2 h-2 rounded-full bg-terracotta mr-1.5" aria-hidden="true"></span>
-                                        Destination City/Address
-                                    </label>
-                                    <input type="text" id="map-dest" placeholder="e.g., Pune" autocomplete="address-level2"
-                                        class="w-full bg-earth-inset border border-earth-borderLight rounded-lg px-3.5 py-2.5 text-earth-text placeholder:text-earth-subtle focus:outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500 text-sm transition-colors"
-                                        required aria-required="true">
-                                </div>
-                                <button type="submit" id="btn-find-routes"
-                                    class="w-full bg-sage-500 hover:bg-sage-400 text-earth-base font-semibold py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2 focus:ring-offset-earth-base disabled:opacity-50 disabled:cursor-not-allowed text-sm">
-                                    Find Routes
-                                </button>
-
-                                <!-- Advanced Vehicle Options -->
-                                <fieldset class="mt-6 pt-5 border-t border-earth-border">
-                                    <legend class="text-xs font-bold uppercase tracking-wider text-earth-muted mb-4">Vehicle &amp; Driver Profile</legend>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label for="map-speed" class="block text-xs font-medium text-earth-muted mb-1">Max Speed (km/h)</label>
-                                            <input type="number" id="map-speed" value="45" min="5" max="200"
-                                                class="w-full bg-earth-inset border border-earth-borderLight rounded-lg px-3 py-2 text-earth-text text-sm font-mono focus:outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors">
-                                        </div>
-                                        <div>
-                                            <label for="map-accel" class="block text-xs font-medium text-earth-muted mb-1">Acceleration (m/s²)</label>
-                                            <input type="number" step="0.1" id="map-accel" value="0.6" min="0.1" max="5.0"
-                                                class="w-full bg-earth-inset border border-earth-borderLight rounded-lg px-3 py-2 text-earth-text text-sm font-mono focus:outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors">
-                                        </div>
-                                        <div>
-                                            <label for="map-hp" class="block text-xs font-medium text-earth-muted mb-1">Vehicle HP</label>
-                                            <input type="number" id="map-hp" value="120" min="30" max="1000"
-                                                class="w-full bg-earth-inset border border-earth-borderLight rounded-lg px-3 py-2 text-earth-text text-sm font-mono focus:outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors">
-                                        </div>
-                                        <div>
-                                            <label for="map-temp" class="block text-xs font-medium text-earth-muted mb-1">A/C Temp (°C)</label>
-                                            <input type="number" id="map-temp" value="28" min="16" max="40"
-                                                class="w-full bg-earth-inset border border-earth-borderLight rounded-lg px-3 py-2 text-earth-text text-sm font-mono focus:outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors">
-                                        </div>
-                                        <div class="col-span-2">
-                                            <div class="flex justify-between items-center mb-1.5">
-                                                <label for="map-load" class="block text-xs font-medium text-earth-muted">Current Load</label>
-                                                <span id="map-load-val" class="text-xs font-mono font-semibold text-sand bg-earth-inset px-2 py-0.5 rounded border border-earth-border" aria-live="polite">55%</span>
-                                            </div>
-                                            <input type="range" id="map-load" min="0" max="100" value="55"
-                                                aria-label="Current vehicle load percentage" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100"
-                                                class="w-full accent-sage-500 cursor-pointer h-2 bg-earth-inset rounded-lg appearance-none">
-                                        </div>
-                                    </div>
-                                </fieldset>
-                            </form>
+                <div id="gm-profile-fields" class="gm-collapse-body" hidden>
+                    <div class="gm-grid-2">
+                        <div class="gm-field">
+                            <label for="map-speed" class="gm-label">Max Speed (km/h)</label>
+                            <input type="number" id="map-speed" value="45" min="5" max="200">
                         </div>
-
-                        <!-- Map Container -->
-                        <div class="bg-earth-surface border border-earth-border p-2 rounded-xl lg:col-span-8 h-[450px] sm:h-[550px] lg:h-[620px] relative overflow-hidden slide-up" style="animation-delay: 0.2s;">
-                            <div id="map-container" class="w-full h-full rounded-lg z-0 bg-earth-inset" role="application" aria-label="Interactive map showing route options"></div>
-
-                            <!-- Map loading overlay -->
-                            <div id="map-loader" class="absolute inset-0 bg-earth-inset/90 z-10 hidden flex-col items-center justify-center rounded-lg transition-all">
-                                <div class="loader-dual-ring mb-4"></div>
-                                <p class="text-sage-400 font-semibold text-sm tracking-wide">Calculating optimal routes...</p>
-                                <p class="text-earth-muted text-xs mt-1">Analyzing terrain slope, traffic &amp; vehicle load</p>
-                            </div>
+                        <div class="gm-field">
+                            <label for="map-accel" class="gm-label">Acceleration (m/s²)</label>
+                            <input type="number" step="0.1" id="map-accel" value="0.6" min="0.1" max="5.0">
+                        </div>
+                        <div class="gm-field">
+                            <label for="map-hp" class="gm-label">Vehicle HP</label>
+                            <input type="number" id="map-hp" value="120" min="30" max="2000">
+                        </div>
+                        <div class="gm-field">
+                            <label for="map-temp" class="gm-label">A/C Temp (°C)</label>
+                            <input type="number" id="map-temp" value="28" min="16" max="40">
                         </div>
                     </div>
-
-                    <!-- BOTTOM: Results Section -->
-                    <div id="results-container" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 slide-up" style="animation-delay: 0.25s;">
-                        
-                        <!-- Recommended Eco-Route Summary -->
-                        <div class="lg:col-span-4">
-                            <div id="map-results" class="bg-earth-surface border border-earth-border p-6 rounded-xl flex flex-col justify-between h-full">
-                                <div>
-                                    <div class="flex items-center justify-between pb-4 border-b border-earth-border mb-6">
-                                        <h3 class="text-xs font-bold uppercase tracking-wider text-earth-muted">Recommended Route</h3>
-                                        <span class="bg-sage-500/10 text-sage-400 border border-sage-500/20 text-[11px] font-bold px-2.5 py-0.5 rounded uppercase tracking-wider">Most Efficient</span>
-                                    </div>
-
-                                    <!-- Main Primary Fuel Value -->
-                                    <div class="mb-6">
-                                        <div class="text-4xl font-bold font-mono text-sage-400 tracking-tight" id="map-fuel-val">--</div>
-                                        <div class="text-xs font-medium text-earth-muted mt-1 uppercase tracking-wider">Total Liters Estimated</div>
-                                    </div>
-
-                                    <!-- Un-nested Metric List -->
-                                    <div class="divide-y divide-earth-border text-sm">
-                                        <div class="py-3 flex justify-between items-center">
-                                            <span class="text-earth-muted">Distance</span>
-                                            <span class="font-mono font-semibold text-water"><span id="map-dist-val">--</span> km</span>
-                                        </div>
-                                        <div class="py-3 flex justify-between items-center">
-                                            <span class="text-earth-muted">Estimated Time</span>
-                                            <span class="font-mono font-semibold text-earth-text"><span id="map-time-val">--</span> min</span>
-                                        </div>
-                                        <div class="py-3 flex justify-between items-center">
-                                            <span class="text-earth-muted">Est. CO₂ Footprint</span>
-                                            <span class="font-mono font-semibold text-sage-400"><span id="map-co2-val">--</span> kg</span>
-                                        </div>
-                                        <div class="py-3 flex justify-between items-center">
-                                            <span class="text-earth-muted">Eco-Score</span>
-                                            <span class="font-mono font-bold bg-sage-500/10 text-sage-400 border border-sage-500/20 px-2 py-0.5 rounded text-xs">A+</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="gm-field">
+                        <div class="gm-load-row">
+                            <label for="map-load" class="gm-label">Current Load</label>
+                            <span id="map-load-val" class="gm-load-val" aria-live="polite">55%</span>
                         </div>
-
-                        <!-- Route Comparisons -->
-                        <div class="lg:col-span-8">
-                            <div class="bg-earth-surface border border-earth-border p-6 rounded-xl h-full flex flex-col">
-                                <h3 class="text-xs font-bold uppercase tracking-wider text-earth-muted pb-3 border-b border-earth-border mb-4">Route Comparisons</h3>
-                                <div id="route-comparisons" class="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-                                    <!-- Dynamic cards populated via JS -->
-                                </div>
-                            </div>
-                        </div>
+                        <input type="range" id="map-load" min="0" max="100" value="55"
+                            aria-label="Current vehicle load percentage" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100">
                     </div>
                 </div>
-            </section>
-
-            <!-- SECTION: FULL ROUTE (hidden) -->
-            <section id="section-route" aria-hidden="true" tabindex="-1"
-                class="absolute inset-0 transition-all duration-300 ease-out transform translate-x-[100%] opacity-0 pointer-events-none">
-                <div class="bg-earth-surface border border-earth-border p-8 rounded-xl max-w-3xl mx-auto">
-                    <h2 class="text-lg font-bold text-earth-text mb-4">Route Prediction</h2>
-                    <p class="text-earth-muted text-sm mb-6">Enter features for multiple segments to calculate the total fuel for the entire route.</p>
-
-                    <form id="route-form" onsubmit="handleRouteSubmit(event)">
-                        <div id="segments-container" class="space-y-4 mb-6">
-                            <div class="grid grid-cols-[1fr,auto] gap-4 items-center segment-input-group">
-                                <input type="text" id="route-segment-1" aria-label="Features for Segment 1"
-                                    class="route-segment-input w-full bg-earth-inset border border-earth-borderLight rounded-lg px-4 py-2.5 text-earth-text font-mono text-sm focus:outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors"
-                                    placeholder="45, 0.6, 2.5, 1.2, 0.4, 28, 1, 300, 12">
-                            </div>
-                        </div>
-
-                        <div class="flex gap-4 mb-8">
-                            <button type="button" onclick="addSegmentInput()"
-                                class="px-4 py-2.5 bg-earth-border hover:bg-earth-borderLight rounded-lg text-xs font-medium text-earth-text transition-colors focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2 focus:ring-offset-earth-base">
-                                + Add Segment
-                            </button>
-                            <button type="button" onclick="clearSegments()"
-                                class="px-4 py-2.5 bg-transparent hover:bg-terracotta/10 text-terracotta rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta/50 focus:ring-offset-2 focus:ring-offset-earth-base">
-                                Clear All
-                            </button>
-                        </div>
-
-                        <button type="submit"
-                            class="w-full bg-sage-500 hover:bg-sage-400 text-earth-base font-semibold py-3 rounded-lg transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2 focus:ring-offset-earth-base disabled:opacity-50 disabled:cursor-not-allowed">
-                            Calculate Total Route Fuel
-                        </button>
-                    </form>
-
-                    <div id="route-result" class="hidden mt-8 pt-8 border-t border-earth-border">
-                        <div class="flex justify-between items-end mb-4">
-                            <span class="text-earth-muted text-sm">Total Fuel</span>
-                            <span class="text-3xl font-bold font-mono text-sage-400" id="route-total-value">--</span>
-                        </div>
-                        <div class="bg-earth-inset rounded-lg p-4 border border-earth-border">
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-earth-muted mb-3">Segment Breakdown</h4>
-                            <div id="route-breakdown" class="space-y-2"></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION: COMPARE ROUTES (hidden) -->
-            <section id="section-compare" aria-hidden="true" tabindex="-1"
-                class="absolute inset-0 transition-all duration-300 ease-out transform translate-x-[100%] opacity-0 pointer-events-none">
-                <div class="bg-earth-surface border border-earth-border p-8 rounded-xl max-w-4xl mx-auto">
-                    <h2 class="text-lg font-bold text-earth-text mb-4">Compare Routes</h2>
-                    <p class="text-earth-muted text-sm mb-6">Paste data for two routes to find the most efficient one.</p>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div class="space-y-2">
-                            <label for="compare-route-1" class="block text-xs font-semibold text-earth-muted uppercase tracking-wider">Route A (JSON format)</label>
-                            <textarea id="compare-route-1" rows="5"
-                                class="w-full bg-earth-inset border border-earth-borderLight rounded-lg px-4 py-3 text-earth-text font-mono text-sm focus:outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors"
-                                placeholder="[[10, 20], [15, 25]]"></textarea>
-                        </div>
-                        <div class="space-y-2">
-                            <label for="compare-route-2" class="block text-xs font-semibold text-earth-muted uppercase tracking-wider">Route B (JSON format)</label>
-                            <textarea id="compare-route-2" rows="5"
-                                class="w-full bg-earth-inset border border-earth-borderLight rounded-lg px-4 py-3 text-earth-text font-mono text-sm focus:outline-none focus:border-sage-500 focus:ring-1 focus:ring-sage-500 transition-colors"
-                                placeholder="[[12, 18], [14, 22]]"></textarea>
-                        </div>
-                    </div>
-
-                    <button onclick="handleCompareSubmit()"
-                        class="w-full bg-sage-500 hover:bg-sage-400 text-earth-base font-semibold py-3 rounded-lg transition-colors text-sm mb-8 focus:outline-none focus:ring-2 focus:ring-sage-400 focus:ring-offset-2 focus:ring-offset-earth-base">
-                        Compare Efficiency
-                    </button>
-
-                    <div id="compare-result" class="hidden">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div id="compare-card-1" class="p-5 rounded-lg bg-earth-inset border border-earth-border">
-                                <h3 class="text-earth-muted text-xs uppercase tracking-wider mb-2">Route A</h3>
-                                <div class="text-2xl font-bold font-mono text-earth-text mb-1" id="compare-val-0">--</div>
-                                <div class="text-xs text-earth-subtle">Liters Total</div>
-                            </div>
-                            <div id="compare-card-2" class="p-5 rounded-lg bg-earth-inset border border-earth-border">
-                                <h3 class="text-earth-muted text-xs uppercase tracking-wider mb-2">Route B</h3>
-                                <div class="text-2xl font-bold font-mono text-earth-text mb-1" id="compare-val-1">--</div>
-                                <div class="text-xs text-earth-subtle">Liters Total</div>
-                            </div>
-                        </div>
-                        <div class="mt-6 text-center">
-                            <span class="inline-block px-3 py-1 rounded bg-sage-500/10 text-sage-400 font-mono text-xs border border-sage-500/20" id="compare-winner">
-                                Winner: --
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-        </main>
+            </div>
+        </form>
     </div>
 
-    <!-- Footer -->
-    <footer class="text-center py-6 mt-12 text-earth-subtle text-xs border-t border-earth-border">
-        <p>EcoRoute &mdash; AI-Based Fuel-Efficient Route Optimization using IoV</p>
-    </footer>
+    <!-- Floating zoom controls (bottom-right) -->
+    <div id="zoom-controls" class="gm-zoom-controls" role="group" aria-label="Map zoom controls">
+        <button id="btn-zoom-in" class="gm-zoom-btn" title="Zoom in" aria-label="Zoom in">+</button>
+        <div class="gm-zoom-divider" aria-hidden="true"></div>
+        <button id="btn-zoom-out" class="gm-zoom-btn" title="Zoom out" aria-label="Zoom out">−</button>
+    </div>
+
+    <!-- Slide-out details panel (Google Maps place-details blade) -->
+    <div id="results-container" class="gm-side-panel" role="complementary" aria-label="Route details">
+        <div class="gm-panel-header">
+            <div>
+                <h2 class="gm-panel-title">Recommended Route</h2>
+                <span class="gm-panel-subtitle">Most fuel-efficient</span>
+            </div>
+            <button id="btn-close-panel" class="gm-icon-btn" title="Close panel" aria-label="Close panel">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3c4043" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div id="map-results" class="gm-panel-body">
+            <div class="gm-primary-metric">
+                <div class="gm-primary-value"><span id="map-fuel-val">--</span> <span class="gm-primary-unit">L</span></div>
+                <div class="gm-primary-label">Total fuel estimated</div>
+            </div>
+
+            <div class="gm-metrics">
+                <div class="gm-metric">
+                    <span class="gm-metric-label">Distance</span>
+                    <span class="gm-metric-value"><span id="map-dist-val">--</span> km</span>
+                </div>
+                <div class="gm-metric">
+                    <span class="gm-metric-label">Estimated Time</span>
+                    <span class="gm-metric-value"><span id="map-time-val">--</span> min</span>
+                </div>
+                <div class="gm-metric">
+                    <span class="gm-metric-label">Est. CO₂ Footprint</span>
+                    <span class="gm-metric-value"><span id="map-co2-val">--</span> kg</span>
+                </div>
+                <div class="gm-metric">
+                    <span class="gm-metric-label">Eco-Score</span>
+                    <span class="gm-metric-value gm-eco-score">A+</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="gm-panel-section">
+            <h3 class="gm-section-title">Route Comparisons</h3>
+            <div id="route-comparisons" class="gm-route-list">
+                <!-- Dynamic cards populated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Map loading overlay -->
+    <div id="map-loader" class="gm-loader" hidden>
+        <div class="gm-loader-spinner" aria-hidden="true"></div>
+        <p class="gm-loader-title">Calculating optimal routes...</p>
+        <p class="gm-loader-sub">Analyzing terrain slope, traffic &amp; vehicle load</p>
+    </div>
+
+    <!-- Toast notification container -->
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+
+    <!-- ============================================================
+         Hidden legacy sections (Route Prediction / Compare Routes).
+         Kept in the DOM so all backend-linked JS handlers
+         (/predict_segment, /predict_route, /compare_routes) stay intact.
+         ============================================================ -->
+    <div id="section-route" hidden>
+        <div class="gm-legacy-wrap">
+            <h2>Route Prediction</h2>
+            <p>Enter features for multiple segments to calculate the total fuel for the entire route.</p>
+            <form id="route-form" onsubmit="handleRouteSubmit(event)">
+                <div id="segments-container">
+                    <div class="segment-input-group">
+                        <input type="text" id="route-segment-1" class="route-segment-input"
+                            placeholder="45, 0.6, 2.5, 1.2, 0.4, 28, 1, 300, 12">
+                    </div>
+                </div>
+                <div>
+                    <button type="button" onclick="addSegmentInput()">+ Add Segment</button>
+                    <button type="button" onclick="clearSegments()">Clear All</button>
+                </div>
+                <button type="submit">Calculate Total Route Fuel</button>
+            </form>
+            <div id="route-result" hidden>
+                <span>Total Fuel</span>
+                <span id="route-total-value">--</span>
+                <h4>Segment Breakdown</h4>
+                <div id="route-breakdown"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="section-compare" hidden>
+        <div class="gm-legacy-wrap">
+            <h2>Compare Routes</h2>
+            <p>Paste data for two routes to find the most efficient one.</p>
+            <div>
+                <label for="compare-route-1">Route A (JSON format)</label>
+                <textarea id="compare-route-1" rows="5" placeholder="[[10, 20], [15, 25]]"></textarea>
+            </div>
+            <div>
+                <label for="compare-route-2">Route B (JSON format)</label>
+                <textarea id="compare-route-2" rows="5" placeholder="[[12, 18], [14, 22]]"></textarea>
+            </div>
+            <button onclick="handleCompareSubmit()">Compare Efficiency</button>
+            <div id="compare-result" hidden>
+                <div id="compare-card-1">
+                    <h3>Route A</h3>
+                    <div id="compare-val-0">--</div>
+                    <div>Liters Total</div>
+                </div>
+                <div id="compare-card-2">
+                    <h3>Route B</h3>
+                    <div id="compare-val-1">--</div>
+                    <div>Liters Total</div>
+                </div>
+                <span id="compare-winner">Winner: --</span>
+            </div>
+        </div>
+    </div>
+
+    <noscript>
+        <div class="no-js-fallback">
+            <h1 style="font-size:1.4rem;font-weight:500;">EcoRoute requires JavaScript</h1>
+            <p style="max-width:28rem;color:#5f6368;">This application uses Google Maps and real-time ML predictions that require JavaScript to function. Please enable JavaScript in your browser settings and reload the page.</p>
+        </div>
+    </noscript>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>

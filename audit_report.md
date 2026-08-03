@@ -74,7 +74,7 @@ The current design hits nearly every "AI slop" tell from the [frontend-design sk
 #### C1 — Exposed API Key in Source Code
 - **Location**: [index.html:16](file:///c:/Users/ANKIT PRAMANICK/Desktop/Fuel_Optimization/templates/index.html#L16)
 - **Category**: Security
-- **Description**: Google Maps API key `AIzaSyC8I7MxFBrtZAhtzP5s4IgjJtJS1MHPnf8` is hardcoded in the HTML source. Anyone can view-source and steal it.
+- **Description**: Google Maps API key is hardcoded in the HTML source. Anyone can view-source and steal it.
 - **Impact**: Key abuse, quota exhaustion, billing charges. Disqualifying for production deployment.
 - **Recommendation**: Move to environment variable. Load via Flask template `{{ config.GOOGLE_MAPS_KEY }}` or a backend endpoint. Restrict the key in Google Cloud Console by HTTP referrer.
 - **Suggested command**: `/harden`
