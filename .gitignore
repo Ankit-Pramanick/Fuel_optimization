@@ -1,24 +1,48 @@
+# ──────────────────────────────────────
 # Python
+# ──────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
 .env
 
-# Model files (ignore the heavy Random Forest model, keep XGBoost and scaler)
+# ──────────────────────────────────────
+# Model files (keep XGBoost + scaler in repo)
+# ──────────────────────────────────────
 backend/fuel_model.pkl
 fuel_model.pkl
 !backend/xgboost_model.pkl
 !backend/scaler.pkl
 
+# ──────────────────────────────────────
+# Local AI / editor configs
+# ──────────────────────────────────────
+.agent/
+.claude/
+.cursor/
+CLAUDE.md
+CLAUDE.MD
+task.md
+
+# ──────────────────────────────────────
 # IDE
+# ──────────────────────────────────────
 .vscode/
 .idea/
 
+# ──────────────────────────────────────
 # OS
+# ──────────────────────────────────────
 Thumbs.db
 .DS_Store
 
-# Gemini
-.agents/
-extract_ppt.py
+# ──────────────────────────────────────
+# Temporary / scratchpads
+# ──────────────────────────────────────
+*.tmp
+*.swp
+*.bak
+*.orig
+~*
+*.log
